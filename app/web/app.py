@@ -21,8 +21,9 @@ class Application(AiohttpApplication):
 app = Application()
 
 
-# async def start_polling(application: Application):
-#     asyncio.create_task(application.store.user.poll())
+async def start_polling(application: Application):
+    await asyncio.sleep(0)
+    asyncio.create_task(application.store.user.poll())
 
 
 def setup_app(config_path: str) -> Application:
@@ -35,6 +36,6 @@ def setup_app(config_path: str) -> Application:
 
     setup_routes(app)
 
-    app.on_startup.append(app.store.user.poll())
+    app.on_startup.append(start_polling)
 
     return app
