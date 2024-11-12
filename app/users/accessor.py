@@ -16,11 +16,15 @@ class UserAccessor:
 
     async def poll(self):
         while True:
-            updates = await self.send_request("getUpdates", {"offset": self.offset})
+            updates = await self.send_request(
+                "getUpdates", {"offset": self.offset}
+            )
             for update in updates.get("result", []):
                 chat_id = update["message"]["chat"]["id"]
                 message_text = update["message"]["text"]
 
-                await self.send_request("sendMessage", {"chat_id": chat_id, "text": message_text})
+                await self.send_request(
+                    "sendMessage", {"chat_id": chat_id, "text": message_text}
+                )
 
                 self.offset = update["update_id"] + 1
