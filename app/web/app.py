@@ -1,3 +1,6 @@
+import asyncio
+
+import yaml
 from aiohttp.web import (
     Application as AiohttpApplication,
 )
@@ -5,6 +8,8 @@ from aiohttp.web import (
 from .routes import setup_routes
 
 __all__ = ("Application",)
+
+from ..store import Store
 
 
 class Application(AiohttpApplication):
@@ -16,6 +21,20 @@ class Application(AiohttpApplication):
 app = Application()
 
 
+async def start_polling(application: Application):
+    asyncio.create_task(application.store.user.poll())
+
+
 def setup_app(config_path: str) -> Application:
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+        app.config = config
+
+    token = config["telegram"]["token"]
+    app.store = Store(token)
+
     setup_routes(app)
+
+    app.on_startup.append(start_polling)
+
     return app
