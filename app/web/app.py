@@ -22,8 +22,8 @@ app = Application()
 
 
 async def start_polling(application: Application):
-    await asyncio.sleep(0)
-    asyncio.create_task(application.store.user.poll())
+    task = asyncio.create_task(application.store.user.poll())
+    await task
 
 
 def setup_app(config_path: str) -> Application:
