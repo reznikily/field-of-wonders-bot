@@ -9,6 +9,4 @@ sentry:
 
 store:
   telegram:
-    token: secret
-
-
+    token: 7199353331:AAEAW68lCaZa-H29AXWJ4LZ7U8K9F1hxkTM
