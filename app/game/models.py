@@ -16,7 +16,7 @@ class PlayerModel(BaseModel):
 
     id = Column(BigInteger, primary_key=True, index=True)
     game_id = Column(BigInteger, ForeignKey("games.id", ondelete="CASCADE"))
-    user_id = Column(BigInteger, ForeignKey("user.id"))
+    user_id = Column(BigInteger, ForeignKey("users.id"))
     next_player_id = Column(BigInteger, ForeignKey("players.id"))
     points = Column(BigInteger, default=0)
 
@@ -41,6 +41,7 @@ class GameModel(BaseModel):
 class QuestionModel(BaseModel):
     __tablename__ = "questions"
 
+    id = Column(BigInteger, primary_key=True, index=True)
     text = Column(String)
     answer = Column(String)
     games = relationship(GameModel, uselist=True)

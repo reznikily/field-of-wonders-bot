@@ -29,7 +29,8 @@ exclude = [
     "env",
     "etc",
     "requirements",
-    "venv"
+    "venv",
+    "migrations"
 ]
 
 [tool.ruff.format]
