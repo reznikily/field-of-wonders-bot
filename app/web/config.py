@@ -13,8 +13,18 @@ class BotConfig:
 
 
 @dataclass
+class DatabaseConfig:
+    host: str
+    port: int
+    user: str
+    password: str
+    name: str
+
+
+@dataclass
 class Config:
     bot: BotConfig | None = None
+    database: DatabaseConfig | None = None
 
 
 def setup_config(app: "Application", config_path: str):
@@ -24,5 +34,6 @@ def setup_config(app: "Application", config_path: str):
     app.config = Config(
         bot=BotConfig(
             token=raw_config["store"]["telegram"]["token"],
-        )
+        ),
+        database=DatabaseConfig(**raw_config["database"]),
     )
