@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -18,6 +19,8 @@ class PlayerModel(BaseModel):
     game_id = Column(BigInteger, ForeignKey("games.id", ondelete="CASCADE"))
     user_id = Column(BigInteger, ForeignKey("users.id"))
     next_player_id = Column(BigInteger, ForeignKey("players.id"))
+    in_game = Column(Boolean, default=True)
+    active = Column(Boolean, default=True)
     points = Column(BigInteger, default=0)
 
 
@@ -31,7 +34,6 @@ class GameModel(BaseModel):
     chat_id = Column(BigInteger, nullable=False)
     word_state = Column(LargeBinary, default=0)
     game_state = Column(BigInteger, default=0)
-    current_player_id = Column(BigInteger, ForeignKey("players.id"))
     winner_id = Column(BigInteger, ForeignKey("users.id"))
     players = relationship(PlayerModel, uselist=True)
     created_at = Column(DateTime)
