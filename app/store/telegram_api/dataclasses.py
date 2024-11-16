@@ -12,6 +12,7 @@ class UpdateMessage:
     id: int
     chat_id: int
     from_id: int
+    username: str
     text: str
 
 

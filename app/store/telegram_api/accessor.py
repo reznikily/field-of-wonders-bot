@@ -49,20 +49,23 @@ class TelegramApiAccessor(BaseAccessor):
             data = await response.json()
             self.logger.info(data)
 
-            updates = [
-                UpdateObject(
-                    id=update["update_id"],
-                    message=UpdateMessage(
-                        id=update["message"]["message_id"],
-                        from_id=update["message"]["from"]["id"],
-                        chat_id=update["message"]["chat"]["id"],
-                        text=update["message"]["text"],
-                    ),
-                )
-                for update in data.get("result", [])
-            ]
-            if len(updates) > 0:
-                self.offset = updates[-1].id + 1
+            updates = []
+            for update in data.get("result", []):
+                self.offset = update["update_id"] + 1
+                if "message" in update:
+                    updates.append(
+                        UpdateObject(
+                            id=update["update_id"],
+                            message=UpdateMessage(
+                                id=update["message"]["message_id"],
+                                from_id=update["message"]["from"]["id"],
+                                chat_id=update["message"]["chat"]["id"],
+                                username=update["message"]["from"]["username"],
+                                text=update["message"]["text"],
+                            ),
+                        )
+                    )
+
             await self.app.store.bots_manager.handle_updates(updates)
 
     async def send_message(self, message: Message) -> None:

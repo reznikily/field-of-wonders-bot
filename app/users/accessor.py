@@ -16,15 +16,17 @@ class UserAccessor(BaseAccessor):
     async def connect(self, app: "Application") -> None:
         self.app = app
 
-    async def create_user(self, user_id: int) -> UserModel:
+    async def create_user(self, user_id: int, username: str) -> UserModel:
         request = insert(UserModel).values(
-            id=user_id, role="player", score=0, points=0
+            id=user_id, username=username, role="player", score=0, points=0
         )
         async with self.app.database.session as session:
             await session.execute(request)
             await session.commit()
 
-        return UserModel(id=user_id, role="player", score=0, points=0)
+        return UserModel(
+            id=user_id, username=username, role="player", score=0, points=0
+        )
 
     async def get_by_id(self, user_id: int) -> UserModel | None:
         request = select(UserModel)

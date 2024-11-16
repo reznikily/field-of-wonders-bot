@@ -4,8 +4,8 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
-    LargeBinary,
     String,
+    func,
 )
 from sqlalchemy.orm import relationship
 
@@ -32,12 +32,12 @@ class GameModel(BaseModel):
         BigInteger, ForeignKey("questions.id", ondelete="CASCADE")
     )
     chat_id = Column(BigInteger, nullable=False)
-    word_state = Column(LargeBinary, default=0)
-    game_state = Column(BigInteger, default=0)
+    word_state = Column(BigInteger, default=0)
+    game_state = Column(BigInteger, default=1)
     winner_id = Column(BigInteger, ForeignKey("users.id"))
     players = relationship(PlayerModel, uselist=True)
-    created_at = Column(DateTime)
-    ended_at = Column(DateTime)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    ended_at = Column(DateTime(timezone=True), default=None)
 
 
 class QuestionModel(BaseModel):
