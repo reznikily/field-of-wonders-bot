@@ -1,3 +1,6 @@
+from app.store import Store
+
+
 class UserAccessor:
-    def __init__(self, config) -> None:
-        self.config = config
+    def __init__(self, store: Store) -> None:
+        pass
