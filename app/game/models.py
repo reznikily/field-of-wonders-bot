@@ -18,6 +18,7 @@ class PlayerModel(BaseModel):
     id = Column(BigInteger, primary_key=True, index=True)
     game_id = Column(BigInteger, ForeignKey("games.id", ondelete="CASCADE"))
     user_id = Column(BigInteger, ForeignKey("users.id"))
+    username = Column(String, nullable=False)
     next_player_id = Column(BigInteger, ForeignKey("players.id"))
     in_game = Column(Boolean, default=True)
     active = Column(Boolean, default=True)
