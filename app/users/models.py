@@ -13,5 +13,5 @@ class UserModel(BaseModel):
     role = Column(String, nullable=False, default="player")
     score = Column(BigInteger, default=0)
     points = Column(BigInteger, default=0)
-    player_profiles = relationship(PlayerModel, uselist=True)
+    players = relationship(PlayerModel, uselist=True)
     wins = relationship(GameModel, uselist=True)
