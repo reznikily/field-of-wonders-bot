@@ -1,5 +1,6 @@
 import asyncio
 import json
+import traceback
 import typing
 from logging import getLogger
 
@@ -111,7 +112,6 @@ class BotManager:
                 if query.chat_id in self.registration_tasks:
                     await self.app.store.game.create_player(
                         user_id=query.from_id,
-                        username=query.username,
                         game_id=game_id,
                     )
                     await self.app.store.telegram_api.send_message(
@@ -217,11 +217,14 @@ class BotManager:
         word = question.answer.upper()
 
         self.game_states[chat_id] = {
+            "question": question.text,
             "word": word,
             "word_state": 0,
             "current_player_idx": 0,
             "players": players,
-            "scores": {player.user_id: player.points for player in players},
+            "scores": {
+                player.user_id: player.points for player, user in players
+            },
             "game_id": game_id,
             "waiting_for_input": False,
         }
@@ -241,19 +244,21 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text=f"Слово: {masked_word}\nДлина слова: "
+                    text=f"Загадка: {game_state["question"]}\n"
+                    f"Слово: {masked_word}\nДлина слова: "
                     f"{len(game_state['word'])} букв",
                 )
             )
 
             while not self.is_game_over(chat_id):
-                current_player = game_state["players"][
+                current_player, current_user = game_state["players"][
                     game_state["current_player_idx"]
                 ]
+                del current_player
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=chat_id,
-                        text=f"Ход игрока @{current_player.username}. "
+                        text=f"Ход игрока @{current_user.username}. "
                         f"Назовите букву или слово целиком:",
                     ),
                     reply_markup=json.dumps({"force_reply": True}),
@@ -270,7 +275,7 @@ class BotManager:
                     await self.app.store.telegram_api.send_message(
                         Message(
                             chat_id=chat_id,
-                            text=f"@{current_player.username} "
+                            text=f"@{current_user.username} "
                             f"не успел(а) ответить. "
                             f"Ход переходит к следующему игроку.",
                         )
@@ -288,7 +293,8 @@ class BotManager:
                 )
             )
         finally:
-            await self.end_game(chat_id)
+            if chat_id in game_state:
+                await self.end_game(chat_id)
 
     async def handle_game_input(self, message: UpdateMessage) -> None:
         chat_id = message.chat_id
@@ -299,8 +305,10 @@ class BotManager:
         if not game_state["waiting_for_input"]:
             return
 
-        current_player = game_state["players"][game_state["current_player_idx"]]
-        if message.from_id != current_player.user_id:
+        current_player, current_user = game_state["players"][
+            game_state["current_player_idx"]
+        ]
+        if message.from_id != current_user.id:
             return
 
         guess = message.text.strip().upper()
@@ -311,8 +319,15 @@ class BotManager:
                 game_state["word"], game_state["word_state"], guess
             ):
                 await self.app.store.telegram_api.send_message(
-                    Message(chat_id=chat_id, text="Эта буква уже была названа!")
+                    Message(
+                        chat_id=chat_id,
+                        text="Эта буква уже была названа!"
+                        " Ход переходит к следующему"
+                        " игроку.",
+                    )
                 )
+                await self.next_player(chat_id)
+                self.input_events[chat_id].set()
                 return
 
             new_word_state = self.reveal_letter(
@@ -353,7 +368,7 @@ class BotManager:
         elif guess == game_state["word"]:
             game_state["scores"][current_player.user_id] += 100
             game_state["word_state"] = (1 << len(game_state["word"])) - 1
-            await self.end_game(chat_id, current_player)
+            await self.end_game(chat_id, current_user)
             valid_input = True
         else:
             await self.app.store.telegram_api.send_message(
@@ -367,12 +382,16 @@ class BotManager:
 
     async def next_player(self, chat_id: int):
         game_state = self.game_states[chat_id]
-        current_player = game_state["players"][game_state["current_player_idx"]]
+        current_player, current_user = game_state["players"][
+            game_state["current_player_idx"]
+        ]
+        del current_user
 
         next_idx = (game_state["current_player_idx"] + 1) % len(
             game_state["players"]
         )
-        next_player = game_state["players"][next_idx]
+        next_player, next_user = game_state["players"][next_idx]
+        del next_user
 
         await self.app.store.game.update_next_player(
             current_player.id, next_player.id
@@ -413,18 +432,17 @@ class BotManager:
         try:
             game_state = self.game_states[chat_id]
 
-            for player in game_state["players"]:
+            for player, user in game_state["players"]:
                 await self.app.store.game.update_player_points(
-                    player.id, game_state["scores"][player.user_id]
+                    player.id, game_state["scores"][user.id]
                 )
                 await self.app.store.game.update_player_status(
                     player.id, in_game=False
                 )
 
             scores_text = "Финальный счёт:\n" + "\n".join(
-                f"@{player.username}: "
-                f"{game_state['scores'][player.user_id]} очков"
-                for player in game_state["players"]
+                f"@{user.username}: " f"{game_state['scores'][user.id]} очков"
+                for player, user in game_state["players"]
             )
 
             if winner:
@@ -438,7 +456,7 @@ class BotManager:
                 )
                 await self.app.store.game.end_game(
                     game_id=game_state["game_id"],
-                    winner_id=winner.user_id,
+                    winner_id=winner.id,
                     word_state=(1 << len(game_state["word"])) - 1,
                 )
             else:
@@ -460,11 +478,9 @@ class BotManager:
                 self.game_tasks[chat_id].cancel()
                 del self.game_tasks[chat_id]
 
-            if chat_id in self.game_states:
-                del self.game_states[chat_id]
-
         except Exception:
             self.logger.error("Error ending game.")
+            self.logger.error(traceback.format_exc())
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
