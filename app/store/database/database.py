@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Database:
-    def __init__(self, app: "Application") -> None:
+    def __init__(self, app: "Application", *args, **kwargs) -> None:
         self.app = app
 
         self.engine: AsyncEngine | None = None
@@ -32,8 +32,9 @@ class Database:
                 host=self.app.config.database.host,
                 database=self.app.config.database.name,
             ),
+            echo=True,
         )
-        self.session = async_sessionmaker(self.engine, expire_on_commit=False)
+        self.session = AsyncSession(self.engine, expire_on_commit=False)
 
     async def disconnect(self, *args: Any, **kwargs: Any) -> None:
         await self.engine.dispose()

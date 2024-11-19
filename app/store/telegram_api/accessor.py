@@ -4,6 +4,8 @@ from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
 from app.store.telegram_api.dataclasses import (
+    CallbackAnswer,
+    CallbackQuery,
     Message,
     UpdateMessage,
     UpdateObject,
@@ -49,26 +51,60 @@ class TelegramApiAccessor(BaseAccessor):
             data = await response.json()
             self.logger.info(data)
 
-            updates = [
-                UpdateObject(
-                    id=update["update_id"],
-                    message=UpdateMessage(
-                        id=update["message"]["message_id"],
-                        from_id=update["message"]["from"]["id"],
-                        chat_id=update["message"]["chat"]["id"],
-                        text=update["message"]["text"],
-                    ),
-                )
-                for update in data.get("result", [])
-            ]
-            if len(updates) > 0:
-                self.offset = updates[-1].id + 1
+            updates = []
+            for update in data.get("result", []):
+                self.offset = update["update_id"] + 1
+                if "message" in update:
+                    updates.append(
+                        UpdateObject(
+                            id=update["update_id"],
+                            type="message",
+                            object=UpdateMessage(
+                                id=update["message"]["message_id"],
+                                from_id=update["message"]["from"]["id"],
+                                chat_id=update["message"]["chat"]["id"],
+                                username=update["message"]["from"]["username"],
+                                text=update["message"]["text"],
+                            ),
+                        )
+                    )
+                elif "callback_query" in update:
+                    query = update["callback_query"]
+                    updates.append(
+                        UpdateObject(
+                            id=update["update_id"],
+                            type="callback_query",
+                            object=CallbackQuery(
+                                id=query["id"],
+                                chat_id=query["message"]["chat"]["id"],
+                                from_id=query["from"]["id"],
+                                username=query["from"]["username"],
+                                data=query["data"],
+                            ),
+                        )
+                    )
+
             await self.app.store.bots_manager.handle_updates(updates)
 
-    async def send_message(self, message: Message) -> None:
+    async def send_message(
+        self, message: Message, reply_markup: str | None = None
+    ) -> None:
+        data = {"chat_id": message.chat_id, "text": message.text}
+        if reply_markup:
+            data["reply_markup"] = reply_markup
         async with self.session.post(
-            self._build_url(token=self.token, method="sendMessage"),
-            data={"chat_id": message.chat_id, "text": message.text},
+            self._build_url(token=self.token, method="sendMessage"), data=data
+        ) as response:
+            data = await response.json()
+            self.logger.info(data)
+
+    async def send_callback_answer(self, callback_answer: CallbackAnswer):
+        async with self.session.post(
+            self._build_url(token=self.token, method="answerCallbackQuery"),
+            data={
+                "text": callback_answer.text,
+                "callback_query_id": callback_answer.callback_id,
+            },
         ) as response:
             data = await response.json()
             self.logger.info(data)
