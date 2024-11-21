@@ -198,4 +198,3 @@ filterwarnings = [
     "ignore::DeprecationWarning:pytest_asyncio.plugin.*:",
     "ignore::DeprecationWarning",
 ]
-
