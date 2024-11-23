@@ -175,6 +175,30 @@ class BotManager:
                             text=f"Использованные буквы: {letters}",
                         )
                     )
+            case "/stop":
+                game = await self.app.store.game.get_active_game_by_chat_id(
+                    message.chat_id
+                )
+                if game is not None:
+                    players_and_users = self.game_states[message.chat_id]["players"]
+                    user_ids = [user.id for player, user in players_and_users]
+                    current_user = await self.app.store.users.get_by_id(message.from_id)
+                    if current_user.id in user_ids:
+                        await self.stop_game(message.chat_id)
+                    else:
+                        await self.app.store.telegram_api.send_message(
+                            Message(
+                                chat_id=message.chat_id,
+                                text="Вы не участвуете в игре.",
+                            )
+                        )
+                else:
+                    await self.app.store.telegram_api.send_message(
+                        Message(
+                            chat_id=message.chat_id,
+                            text="В этом чате нет активных игр.",
+                        )
+                    )
             case _:
                 await self.app.store.telegram_api.send_message(
                     Message(
@@ -241,6 +265,9 @@ class BotManager:
         game = await self.app.store.game.get_active_game_by_chat_id(
             message.chat_id
         )
+        if game is None:
+            raise Exception("No active game in the chat.")
+            return
         user = await self.app.store.users.get_by_id(message.from_id)
         if user is None:
             await self.app.store.users.create_user(
@@ -717,6 +744,54 @@ class BotManager:
                     winner_id=None,
                     word_state=(1 << len(game_state["word"])) - 1,
                 )
+
+            if chat_id in self.game_tasks:
+                self.game_tasks[chat_id].cancel()
+                del self.game_tasks[chat_id]
+
+        except Exception:
+            self.logger.error("Error ending game.")
+            self.logger.error(traceback.format_exc())
+            await self.app.store.telegram_api.send_message(
+                Message(
+                    chat_id=chat_id,
+                    text="Произошла ошибка при завершении игры.",
+                )
+            )
+
+    async def stop_game(self, chat_id: int):
+        try:
+            game = await self.app.store.game.get_active_game_by_chat_id(chat_id)
+            await self.app.store.game.end_game(
+                game_id=game.id,
+                winner_id=None,
+                word_state=game.word_state,
+            )
+
+            game_state = self.game_states[chat_id]
+
+            for player, user in game_state["players"]:
+                await self.app.store.game.update_user_points_and_score(
+                    user.id,
+                    game_state["scores"][user.id] + user.points,
+                    user.score + 1,
+                )
+                await self.app.store.game.update_player_status(
+                    player.id, in_game=False
+                )
+
+            scores_text = "Финальный счёт:\n" + "\n".join(
+                f"@{user.username}: " f"{game_state['scores'][user.id]} очков"
+                for player, user in game_state["players"]
+            )
+
+            await self.app.store.telegram_api.send_message(
+                Message(
+                    chat_id=chat_id,
+                    text=f"Завершаю игру.\n\n"
+                    f"{scores_text}",
+                )
+            )
 
             if chat_id in self.game_tasks:
                 self.game_tasks[chat_id].cancel()
