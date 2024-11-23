@@ -1,9 +1,13 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
+
+from app.store.bot.manager import BotManager
+from app.web.app import Application
+
 
 @pytest.fixture
 def mock_app():
-    from app.web.app import Application
     app = AsyncMock(spec=Application)
     app.store.users.get_by_id = AsyncMock()
     app.store.users.create_user = AsyncMock()
@@ -18,7 +22,7 @@ def mock_app():
     app.store.game.end_game = AsyncMock()
     return app
 
+
 @pytest.fixture
 def bot_manager(mock_app):
-    from app.store.bot.manager import BotManager
     return BotManager(mock_app)
