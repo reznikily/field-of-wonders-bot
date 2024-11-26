@@ -1,9 +1,11 @@
+from aiohttp.web_exceptions import HTTPBadRequest, HTTPForbidden
 from aiohttp_apispec import docs, request_schema, response_schema
+from aiohttp_session import get_session
 
-from app.admin.schemes import AdminSchema
+from app.admin.schemes import AdminResponseSchema, AdminSchema
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
-from app.web.utils import json_response
+from app.web.utils import hash_password, json_response
 
 
 class AdminLoginView(View):
@@ -11,16 +13,34 @@ class AdminLoginView(View):
     @request_schema(AdminSchema)
     @response_schema(AdminSchema, 200)
     async def post(self):
-        data = self.data
-        admin = await self.store.admins.get_by_login(data.get("login"))
-        admin_data = await AuthRequiredMixin.auth_admin(
-            self.request, admin, data
-        )
+        data = await self.request.json()
+        try:
+            login = data["login"]
+            password = data["password"]
+        except KeyError:
+            return HTTPBadRequest
 
-        return json_response(data=AdminSchema().dump(admin_data))
+        password_hash = hash_password(password)
+
+        admin = await self.request.app.store.admins.get_by_login(login=login)
+        if not admin:
+            raise HTTPForbidden
+
+        session = await get_session(self.request)
+        session["token"] = self.request.app.config.session.key
+
+        if login == admin.login and password_hash == admin.password:
+            session["admin"] = {}
+            session["admin"].setdefault("id", admin.id)
+            session["admin"].setdefault("login", admin.login)
+
+            raw_admin = AdminResponseSchema().dump(admin)
+            return json_response(data=raw_admin)
+
+        raise HTTPForbidden
 
 
-class AdminCurrentView(View):
+class AdminCurrentView(AuthRequiredMixin, View):
     @docs(
         tags=["admin"],
         summary="Admin current",
@@ -28,6 +48,6 @@ class AdminCurrentView(View):
     )
     @response_schema(AdminSchema, 200)
     async def get(self):
-        admin = await AuthRequiredMixin.check_auth_admin(self.request)
-
+        session = await get_session(self.request)
+        admin = session.get("admin")
         return json_response(data=AdminSchema().dump(admin))

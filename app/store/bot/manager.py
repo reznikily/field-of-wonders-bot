@@ -5,6 +5,40 @@ import traceback
 import typing
 from logging import getLogger
 
+from app.store.bot.messages import (
+    GAME_ALREADY_ACTIVE,
+    GAME_END_ERROR,
+    GAME_ENDED,
+    GAME_ERROR,
+    GAME_QUESTION_FORMAT,
+    GAME_STARTED,
+    GAME_WON,
+    LETTER_ALREADY_GUESSED,
+    LETTER_ALREADY_GUESSED_X2,
+    LETTER_CORRECT,
+    LETTER_CORRECT_X2,
+    LETTER_INCORRECT,
+    NO_ACTIVE_GAMES,
+    NOT_ENOUGH_PLAYERS,
+    NOT_IN_GAME,
+    PROFILE_MESSAGE,
+    REGISTRATION_5_SEC,
+    REGISTRATION_10_SEC,
+    REGISTRATION_CLOSED,
+    REGISTRATION_START,
+    RULES_MESSAGE,
+    SECTOR_0_MESSAGE,
+    SECTOR_B_MESSAGE,
+    SECTOR_NUMERIC_MESSAGE,
+    SECTOR_X2_MESSAGE,
+    START_FIRST_TIME,
+    START_RETURNING_USER,
+    TIMEOUT_MESSAGE,
+    UNKNOWN_COMMAND,
+    WAIT_FOR_WORD,
+    WORD_GUESS_INCORRECT,
+    WORD_GUESS_NOT_ALLOWED,
+)
 from app.store.telegram_api.dataclasses import (
     CallbackAnswer,
     CallbackQuery,
@@ -70,54 +104,23 @@ class BotManager:
                     await self.app.store.telegram_api.send_message(
                         Message(
                             chat_id=message.chat_id,
-                            text=f"@{message.username}, привет! Это игра Поле "
-                            f"Чудес. Я вижу, ты здесь впервые, с правилами "
-                            f"можешь ознакомиться по команде /rules. По "
-                            f"команде /rules можешь посмотреть свою "
-                            f"статистику. Давай сыграем! Для начала "
-                            f"игры напиши /play.",
+                            text=START_FIRST_TIME.format(
+                                username=message.username
+                            ),
                         )
                     )
                 else:
                     await self.app.store.telegram_api.send_message(
                         Message(
                             chat_id=message.chat_id,
-                            text=f"Привет, @{message.username}! А я Вас "
-                            f"уже знаю! Если что, правила доступны "
-                            f"по команде /rules. "
-                            f"Для начала игры напиши /play.",
+                            text=START_RETURNING_USER.format(
+                                username=message.username
+                            ),
                         )
                     )
             case "/rules":
                 await self.app.store.telegram_api.send_message(
-                    Message(
-                        chat_id=message.chat_id,
-                        text="Правила игры:\n"
-                        "После отправки команды /play начинается "
-                        "регистрация на игру. На регистрацию отводится "
-                        "всего 15 секунд. Для игры нужно минимум 2 игрока. "
-                        "В начале каждого хода крутится барабан. На "
-                        "барабане могут быть следующие сектора: x2, Б, "
-                        "0, 350, 400, 450, 500, 600, 650, 700, 750, 800, "
-                        "850, 950, 1000. Если игроку выпал численный "
-                        "сектор или x2, то ему предоставляется "
-                        "возможность угадать букву. Если игрок угадывает "
-                        "букву, то:\n1. при секторе x2 количество очков "
-                        "увеличивается ровно во столько, сколько было "
-                        "угаданных букв;\n"
-                        "2. при численном секторе количество очков "
-                        "увеличивается на выпавшее число.\n"
-                        "Если выпал сектор Б, то очки текущего игрока "
-                        "обнуляются, а ход переходит к следующему игроку.\n"
-                        "Если игрок назвал букву верно, то он получает "
-                        "возможность"
-                        " угадать слово целиком, или продолжить крутить "
-                        "барабан. В случае, когда буква названа неверно, "
-                        "ход передается другому игроку. Побеждает игрок, "
-                        "отгадавший все слово.\nВ игре доступны команды:\n"
-                        "/question - узнать вопрос в текущей игре\n"
-                        "/used - узнать, какие буквы уже назвали",
-                    )
+                    Message(chat_id=message.chat_id, text=RULES_MESSAGE)
                 )
             case "/play":
                 game = await self.app.store.game.get_active_game_by_chat_id(
@@ -128,8 +131,7 @@ class BotManager:
                 else:
                     await self.app.store.telegram_api.send_message(
                         Message(
-                            chat_id=message.chat_id,
-                            text="В этом чате уже идёт игра!",
+                            chat_id=message.chat_id, text=GAME_ALREADY_ACTIVE
                         )
                     )
             case "/profile":
@@ -142,9 +144,11 @@ class BotManager:
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=message.chat_id,
-                        text=f"Профиль игрока @{user.username}:\n\n"
-                        f"Побед: {user.score}\n"
-                        f"Очков: {user.points}",
+                        text=PROFILE_MESSAGE.format(
+                            username=user.username,
+                            score=user.score,
+                            points=user.points,
+                        ),
                     )
                 )
             case "/question":
@@ -193,21 +197,21 @@ class BotManager:
                         await self.app.store.telegram_api.send_message(
                             Message(
                                 chat_id=message.chat_id,
-                                text="Вы не участвуете в игре.",
+                                text=NOT_IN_GAME,
                             )
                         )
                 else:
                     await self.app.store.telegram_api.send_message(
                         Message(
                             chat_id=message.chat_id,
-                            text="В этом чате нет активных игр.",
+                            text=NO_ACTIVE_GAMES,
                         )
                     )
             case _:
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=message.chat_id,
-                        text="Простите, но таких команд не знаю :(",
+                        text=UNKNOWN_COMMAND,
                     )
                 )
 
@@ -240,8 +244,7 @@ class BotManager:
             else:
                 await self.app.store.telegram_api.send_callback_answer(
                     CallbackAnswer(
-                        callback_id=query.id,
-                        text="Извините, регистрация уже закончена!",
+                        callback_id=query.id, text=REGISTRATION_CLOSED
                     )
                 )
         elif query.data.startswith("spin"):
@@ -294,12 +297,7 @@ class BotManager:
             ]
         }
         await self.app.store.telegram_api.send_message(
-            Message(
-                chat_id=message.chat_id,
-                text="Начинаем игру! Правила доступны по команде "
-                "/rules. Даю 15 секунд на то, чтобы "
-                "зарегистрироваться!",
-            ),
+            Message(chat_id=message.chat_id, text=REGISTRATION_START),
             reply_markup=json.dumps(reply_markup),
         )
 
@@ -309,14 +307,14 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Осталось 10 секунд!",
+                    text=REGISTRATION_10_SEC,
                 )
             )
             await asyncio.sleep(5)
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Осталось 5 секунд!",
+                    text=REGISTRATION_5_SEC,
                 )
             )
             await asyncio.sleep(5)
@@ -326,8 +324,7 @@ class BotManager:
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=chat_id,
-                        text="Недостаточно игроков для начала игры "
-                        "(минимум 2).",
+                        text=NOT_ENOUGH_PLAYERS,
                     )
                 )
                 await self.app.store.game.end_game(game_id)
@@ -336,7 +333,7 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Начинаем!",
+                    text=GAME_STARTED,
                 )
             )
 
@@ -386,9 +383,11 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text=f"Загадка: {game_state["question"]}\n"
-                    f"Слово: {masked_word}\nДлина слова: "
-                    f"{len(game_state['word'])} букв",
+                    text=GAME_QUESTION_FORMAT.format(
+                        question=game_state["question"],
+                        masked_word=masked_word,
+                        word_length=len(game_state["word"]),
+                    ),
                 )
             )
 
@@ -401,7 +400,7 @@ class BotManager:
                     await self.app.store.telegram_api.send_message(
                         Message(
                             chat_id=chat_id,
-                            text="Жду слово!",
+                            text=WAIT_FOR_WORD,
                         ),
                         reply_markup=json.dumps({"force_reply": True}),
                     )
@@ -414,10 +413,9 @@ class BotManager:
                             await self.app.store.telegram_api.send_message(
                                 Message(
                                     chat_id=chat_id,
-                                    text=f"Ход игрока "
-                                    f"@{current_user.username}.\n"
-                                    f"Сектор x2 на барабане! "
-                                    f"Назовите букву. ",
+                                    text=SECTOR_X2_MESSAGE.format(
+                                        username=current_user.username
+                                    ),
                                 ),
                                 reply_markup=json.dumps({"force_reply": True}),
                             )
@@ -425,11 +423,9 @@ class BotManager:
                             await self.app.store.telegram_api.send_message(
                                 Message(
                                     chat_id=chat_id,
-                                    text=f"Ход игрока "
-                                    f"@{current_user.username}.\n"
-                                    f"К сожалению, Вам выпал сектор Б. "
-                                    f"Ваши очки обнуляются. "
-                                    f"Ход переходит к другому игроку.",
+                                    text=SECTOR_0_MESSAGE.format(
+                                        username=current_user.username
+                                    ),
                                 ),
                                 reply_markup=json.dumps({"force_reply": True}),
                             )
@@ -440,10 +436,9 @@ class BotManager:
                             await self.app.store.telegram_api.send_message(
                                 Message(
                                     chat_id=chat_id,
-                                    text=f"Ход игрока "
-                                    f"@{current_user.username}.\n"
-                                    f"К сожалению, Вам выпал сектор 0. "
-                                    f"Ход переходит к другому игроку.",
+                                    text=SECTOR_B_MESSAGE.format(
+                                        username=current_user.username
+                                    ),
                                 ),
                                 reply_markup=json.dumps({"force_reply": True}),
                             )
@@ -453,11 +448,12 @@ class BotManager:
                             await self.app.store.telegram_api.send_message(
                                 Message(
                                     chat_id=chat_id,
-                                    text=f"Ход игрока "
-                                    f"@{current_user.username}.\n"
-                                    f"Сектор {self.SECTORS[
-                                             game_state["current_sector"]
-                                         ]} на барабане! Назовите букву.",
+                                    text=SECTOR_NUMERIC_MESSAGE.format(
+                                        username=current_user.username,
+                                        sector=self.SECTORS[
+                                            game_state["current_sector"]
+                                        ],
+                                    ),
                                 ),
                                 reply_markup=json.dumps({"force_reply": True}),
                             )
@@ -473,9 +469,9 @@ class BotManager:
                     await self.app.store.telegram_api.send_message(
                         Message(
                             chat_id=chat_id,
-                            text=f"@{current_user.username} "
-                            f"не успел(а) ответить. "
-                            f"Ход переходит к следующему игроку.",
+                            text=TIMEOUT_MESSAGE.format(
+                                username=current_user.username
+                            ),
                         )
                     )
                     await self.next_player(chat_id)
@@ -487,9 +483,10 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Произошла ошибка в игре. Игра остановлена.",
+                    text=GAME_ERROR,
                 )
             )
+            await self.stop_game(chat_id)
 
     async def handle_game_input(self, message: UpdateMessage) -> None:
         chat_id = message.chat_id
@@ -519,20 +516,14 @@ class BotManager:
                         await self.app.store.telegram_api.send_message(
                             Message(
                                 chat_id=chat_id,
-                                text="Эта буква уже была названа!"
-                                " К сожалению, ваш счет не меняется."
-                                " Ход переходит к следующему"
-                                " игроку.",
+                                text=LETTER_ALREADY_GUESSED_X2,
                             )
                         )
                     case _:
                         await self.app.store.telegram_api.send_message(
                             Message(
                                 chat_id=chat_id,
-                                text="Эта буква уже была названа!"
-                                " К сожалению, вы не получаете очков."
-                                " Ход переходит к следующему"
-                                " игроку.",
+                                text=LETTER_ALREADY_GUESSED,
                             )
                         )
                 await self.next_player(chat_id)
@@ -593,13 +584,11 @@ class BotManager:
                             await self.app.store.telegram_api.send_message(
                                 Message(
                                     chat_id=chat_id,
-                                    text=f"Буква '{guess}' есть в слове! "
-                                    f"Ваши очки "
-                                    f"увеличиваются в {guessed_letters + 1} "
-                                    f"раз(а).\nВы можете попробовать угадать "
-                                    f"слово целиком, или "
-                                    f"продолжить крутить барабан. "
-                                    f"Слово: {masked_word}",
+                                    text=LETTER_CORRECT_X2.format(
+                                        letter=guess,
+                                        multiplier=guessed_letters + 1,
+                                        masked_word=masked_word,
+                                    ),
                                 ),
                                 reply_markup=json.dumps(reply_markup),
                             )
@@ -607,19 +596,19 @@ class BotManager:
                             await self.app.store.telegram_api.send_message(
                                 Message(
                                     chat_id=chat_id,
-                                    text=f"Буква '{guess}' есть в слове! "
-                                    f"+{points} "
-                                    f"очков.  Вы можете попробовать угадать "
-                                    f"слово целиком, или "
-                                    f"продолжить крутить барабан.\n"
-                                    f"Слово: {masked_word}",
+                                    text=LETTER_CORRECT.format(
+                                        letter=guess,
+                                        points=points,
+                                        masked_word=masked_word,
+                                    ),
                                 ),
                                 reply_markup=json.dumps(reply_markup),
                             )
             else:
                 await self.app.store.telegram_api.send_message(
                     Message(
-                        chat_id=chat_id, text=f"Буквы '{guess}' нет в слове!"
+                        chat_id=chat_id,
+                        text=LETTER_INCORRECT.format(letter=guess),
                     )
                 )
                 await self.next_player(chat_id)
@@ -633,9 +622,7 @@ class BotManager:
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=chat_id,
-                        text="Неверное слово! "
-                        "Ход переходит к "
-                        "следующему игроку",
+                        text=WORD_GUESS_INCORRECT,
                     )
                 )
                 game_state["guessing_word"] = False
@@ -645,8 +632,7 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Вы не можете называть слово целиком. "
-                    "Назовите букву.",
+                    text=WORD_GUESS_NOT_ALLOWED,
                 )
             )
 
@@ -724,9 +710,11 @@ class BotManager:
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=chat_id,
-                        text=f"Поздравляем! @{winner.username} "
-                        f"угадал(а) слово: {game_state['word']}\n\n"
-                        f"{scores_text}",
+                        text=GAME_WON.format(
+                            username=winner.username,
+                            word=game_state["word"],
+                            scores=scores_text,
+                        ),
                     )
                 )
                 await self.app.store.game.end_game(
@@ -738,9 +726,9 @@ class BotManager:
                 await self.app.store.telegram_api.send_message(
                     Message(
                         chat_id=chat_id,
-                        text=f"Игра окончена! Загаданное слово было: "
-                        f"{game_state['word']}\n\n"
-                        f"{scores_text}",
+                        text=GAME_ENDED.format(
+                            word=game_state["word"], scores=scores_text
+                        ),
                     )
                 )
                 await self.app.store.game.end_game(
@@ -759,7 +747,7 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Произошла ошибка при завершении игры.",
+                    text=GAME_END_ERROR,
                 )
             )
 
@@ -806,6 +794,6 @@ class BotManager:
             await self.app.store.telegram_api.send_message(
                 Message(
                     chat_id=chat_id,
-                    text="Произошла ошибка при завершении игры.",
+                    text=GAME_ERROR,
                 )
             )

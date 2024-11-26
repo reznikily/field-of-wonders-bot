@@ -30,7 +30,8 @@ exclude = [
     "etc",
     "requirements",
     "venv",
-    "migrations"
+    "migrations",
+    "tmp"
 ]
 
 [tool.ruff.format]
