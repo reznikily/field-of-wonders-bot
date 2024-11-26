@@ -125,6 +125,17 @@ class GameAccessor(BaseAccessor):
             )
             await session.commit()
 
+    async def update_user_points_and_score(
+        self, user_id: int, points: int, score: int
+    ) -> None:
+        async with self.app.database.session as session:
+            await session.execute(
+                update(UserModel)
+                .where(UserModel.id == user_id)
+                .values(points=points, score=score)
+            )
+            await session.commit()
+
     async def update_player_status(self, player_id: int, in_game: bool) -> None:
         async with self.app.database.session as session:
             await session.execute(
