@@ -51,6 +51,12 @@ class GameAccessor(BaseAccessor):
 
         return None
 
+    async def create_question(self, text: str, answer: str) -> None:
+        request = insert(QuestionModel).values(text=text, answer=answer)
+        async with self.app.database.session as session:
+            await session.execute(request)
+            await session.commit()
+
     async def get_question_by_id(
         self, question_id: int
     ) -> QuestionModel | None:
@@ -62,6 +68,12 @@ class GameAccessor(BaseAccessor):
                 return row[0]
 
         return None
+
+    async def list_questions(self):
+        request = select(QuestionModel)
+        async with self.app.database.session as session:
+            res = await session.execute(request)
+            return res.all()
 
     async def create_player(self, user_id: int, game_id: int) -> None:
         request = insert(PlayerModel).values(user_id=user_id, game_id=game_id)
@@ -110,6 +122,17 @@ class GameAccessor(BaseAccessor):
                 update(PlayerModel)
                 .where(PlayerModel.id == player_id)
                 .values(points=points)
+            )
+            await session.commit()
+
+    async def update_user_points_and_score(
+        self, user_id: int, points: int, score: int
+    ) -> None:
+        async with self.app.database.session as session:
+            await session.execute(
+                update(UserModel)
+                .where(UserModel.id == user_id)
+                .values(points=points, score=score)
             )
             await session.commit()
 
