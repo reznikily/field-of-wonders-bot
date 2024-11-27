@@ -11,12 +11,10 @@ if typing.TYPE_CHECKING:
 class Store:
     def __init__(self, app: "Application"):
         from app.game.accessor import GameAccessor
-        from app.store.admin.accessor import AdminAccessor
         from app.store.bot.manager import BotManager
         from app.store.telegram_api.accessor import TelegramApiAccessor
         from app.users.accessor import UserAccessor
 
-        self.admins = AdminAccessor(app)
         self.users = UserAccessor(app)
         self.game = GameAccessor(app)
         self.telegram_api = TelegramApiAccessor(app)
