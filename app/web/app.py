@@ -52,7 +52,7 @@ class View(AiohttpView):
 app = Application()
 
 
-def setup_app(config_path: str) -> Application:
+def setup_admin_api(config_path: str) -> Application:
     setup_logging(app)
     setup_config(app, config_path)
     session_setup(app, EncryptedCookieStorage(app.config.session.key))
@@ -64,5 +64,12 @@ def setup_app(config_path: str) -> Application:
         swagger_path="/docs",
     )
     setup_middlewares(app)
-    setup_store(app)
+    setup_store(app, "admin-api")
+    return app
+
+
+def setup_bot_manager(config_path: str) -> Application:
+    setup_logging(app)
+    setup_config(app, config_path)
+    setup_store(app, "bot-manager")
     return app
