@@ -11,7 +11,7 @@ env:
 
 jobs:
     publish:
-        name: publish images
+        name: publish image
         runs-on: ubuntu-latest
 
         steps:
