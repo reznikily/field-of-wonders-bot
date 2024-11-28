@@ -1,5 +1,6 @@
 from logging.config import fileConfig
 
+import yaml
 from alembic import context
 from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
@@ -26,8 +27,16 @@ target_metadata = BaseModel.metadata
 # ... etc.
 
 
-url = config.get_main_option("sqlalchemy.url")
-
+with open("etc/cfg.yaml", 'r') as f:
+    cfg = yaml.safe_load(f)
+    database_host = cfg["database"]["host"]
+    database_user = cfg["database"]["user"]
+    database_port = cfg["database"]["port"]
+    database_name = cfg["database"]["name"]
+    database_password = cfg["database"]["password"]
+    url = (f"postgresql+asyncpg://"
+           f"{database_user}:{database_password}"
+           f"@{database_host}:{database_port}/{database_name}")
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

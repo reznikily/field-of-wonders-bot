@@ -7,5 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "alembic", "upgrade", "head" ]
 CMD python3 $RUNNER
