@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 CMD [ "alembic", "upgrade", "head" ]
-CMD [ "python", "./run_bot_manager.py" ]
+CMD [ "python3", "$runner" ]
