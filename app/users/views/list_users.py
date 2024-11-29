@@ -16,5 +16,5 @@ class UserListView(AuthRequiredMixin, View):
         if not users:
             return json_response(data={"users": users})
 
-        raw_users = [UserSchema().dump(user[0] for user in users)]
+        raw_users = [UserSchema().dump(user[0]) for user in users]
         return json_response(data={"users": raw_users})
