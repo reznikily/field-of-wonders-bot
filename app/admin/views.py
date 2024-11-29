@@ -42,7 +42,7 @@ class AdminLoginView(View):
 
 class AdminCurrentView(AuthRequiredMixin, View):
     @docs(
-        tags=["admin"],
+        tags=["Admin"],
         summary="Admin current",
         description="Get admin current data",
     )

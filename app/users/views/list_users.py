@@ -12,7 +12,7 @@ from app.web.utils import json_response
 class UserListView(AuthRequiredMixin, View):
     @docs(
         tags=["Users"],
-        summary="users list",
+        summary="Users list",
         description="Get list of users.",
     )
     @response_schema(ListUserSchema, 200)

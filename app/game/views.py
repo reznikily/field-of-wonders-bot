@@ -13,7 +13,7 @@ from app.web.utils import json_response
 class QuestionAddView(AuthRequiredMixin, View):
     @docs(
         tags=["Game"],
-        summary="question add",
+        summary="Add question",
         description="Add a question.",
     )
     @request_schema(QuestionSchema)
@@ -35,7 +35,7 @@ class QuestionAddView(AuthRequiredMixin, View):
 class QuestionListView(AuthRequiredMixin, View):
     @docs(
         tags=["Game"],
-        summary="question list",
+        summary="Question list",
         description="Get list of questions.",
     )
     @response_schema(ListQuestionSchema, 200)
