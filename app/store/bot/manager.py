@@ -184,14 +184,14 @@ class BotManager:
                     message.chat_id
                 )
                 if game is not None:
-                    players_and_users = self.game_states[message.chat_id][
-                        "players"
+                    user = await self.app.store.users.get_by_id(message.from_id)
+                    current_player_id = self.game_states[message.chat_id][
+                        "current_player_idx"
                     ]
-                    user_ids = [user.id for player, user in players_and_users]
-                    current_user = await self.app.store.users.get_by_id(
-                        message.from_id
-                    )
-                    if current_user.id in user_ids:
+                    current_user_id = self.game_states[message.chat_id][
+                        "players"
+                    ][current_player_id][0].user_id
+                    if user.id == current_user_id:
                         await self.stop_game(message.chat_id)
                     else:
                         await self.app.store.telegram_api.send_message(
