@@ -1,7 +1,10 @@
 from aiohttp.web_exceptions import HTTPBadRequest
 from aiohttp_apispec import request_schema, response_schema
 
-from app.game.schemes import ListQuestionSchema, QuestionSchema
+from app.game.schemes import (
+    ListQuestionSchema,
+    QuestionSchema,
+)
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
 from app.web.utils import json_response

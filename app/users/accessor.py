@@ -22,3 +22,8 @@ class UserAccessor(BaseAccessor):
                 return row[0]
 
         return None
+
+    async def list_users(self):
+        async with self.app.database.session as session:
+            res = await session.execute(select(UserModel))
+            return res.all()
