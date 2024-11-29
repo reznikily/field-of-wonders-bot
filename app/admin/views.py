@@ -9,11 +9,7 @@ from app.web.utils import hash_password, json_response
 
 
 class AdminLoginView(View):
-    @docs(
-        tags=["Admin"],
-        summary="Login admin",
-        description="Login admin"
-    )
+    @docs(tags=["Admin"], summary="Login admin", description="Login admin")
     @request_schema(AdminSchema)
     @response_schema(AdminSchema, 200)
     async def post(self):
