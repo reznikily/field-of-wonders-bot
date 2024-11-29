@@ -231,16 +231,26 @@ class BotManager:
                 and active_game.id == game_id
                 and query.chat_id in self.registration_tasks
             ):
-                await self.app.store.game.create_player(
-                    user_id=query.from_id,
-                    game_id=game_id,
+                players_and_users = (
+                    await self.app.store.game.get_players_by_game_id(game_id)
                 )
-                await self.app.store.telegram_api.send_message(
-                    Message(
-                        chat_id=query.chat_id,
-                        text=f"@{query.username} участвует!",
+                found = False
+                for player, user in players_and_users:
+                    del player
+                    if query.from_id == user.id:
+                        found = True
+                        break
+                if not found:
+                    await self.app.store.game.create_player(
+                        user_id=query.from_id,
+                        game_id=game_id,
                     )
-                )
+                    await self.app.store.telegram_api.send_message(
+                        Message(
+                            chat_id=query.chat_id,
+                            text=f"@{query.username} участвует!",
+                        )
+                    )
             else:
                 await self.app.store.telegram_api.send_callback_answer(
                     CallbackAnswer(
