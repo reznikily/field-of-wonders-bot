@@ -1,4 +1,4 @@
-from aiohttp_apispec import response_schema
+from aiohttp_apispec import docs, response_schema
 
 from app.users.schema import (
     ListUserSchema,
@@ -10,6 +10,11 @@ from app.web.utils import json_response
 
 
 class UserListView(AuthRequiredMixin, View):
+    @docs(
+        tags=["Users"],
+        summary="users list",
+        description="Get list of users.",
+    )
     @response_schema(ListUserSchema, 200)
     async def get(self):
         users = await self.request.app.store.users.list_users()

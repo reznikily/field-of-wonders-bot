@@ -1,5 +1,5 @@
 from aiohttp.web_exceptions import HTTPBadRequest
-from aiohttp_apispec import request_schema, response_schema
+from aiohttp_apispec import docs, request_schema, response_schema
 
 from app.game.schemes import (
     ListQuestionSchema,
@@ -11,6 +11,11 @@ from app.web.utils import json_response
 
 
 class QuestionAddView(AuthRequiredMixin, View):
+    @docs(
+        tags=["Game"],
+        summary="question add",
+        description="Add a question.",
+    )
     @request_schema(QuestionSchema)
     @response_schema(QuestionSchema, 200)
     async def post(self):
@@ -28,6 +33,11 @@ class QuestionAddView(AuthRequiredMixin, View):
 
 
 class QuestionListView(AuthRequiredMixin, View):
+    @docs(
+        tags=["Game"],
+        summary="question list",
+        description="Get list of questions.",
+    )
     @response_schema(ListQuestionSchema, 200)
     async def get(self):
         questions = await self.request.app.store.game.list_questions()
